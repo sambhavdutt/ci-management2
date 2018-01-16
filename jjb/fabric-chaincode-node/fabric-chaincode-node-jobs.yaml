@@ -1,0 +1,204 @@
+---
+- project:
+    name: fabric-chaincode-node
+    jobs:
+      - 'fabric-chaincode-node-verify-{arch}'
+      - 'fabric-chaincode-node-merge-{arch}'
+      - 'fabric-chaincode-node-verify-s390x'
+      - 'fabric-chaincode-node-merge-s390x'
+
+    project: 'fabric-chaincode-node'
+    arch:
+      - 'x86_64'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-chaincode-node-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-node
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - chaincode-node-docker-images
+      - chaincode-node-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+- job-template:
+    name: 'fabric-chaincode-node-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-node
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - chaincode-node-docker-images
+      - chaincode-node-tests
+      - chaincode-npm-publish
+      - chaincode-gulp-doc
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - chaincode-node-coverage-report
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-chaincode-node-verify-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-node
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - chaincode-node-docker-images
+      - chaincode-node-tests-s390x
+
+    publishers:
+      - sdk-logs
+      - sdk-node-coverage-report
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-chaincode-node-merge-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-node
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - chaincode-node-docker-images
+      - chaincode-node-tests-s390x
+
+    publishers:
+      - sdk-logs
+      - chaincode-node-coverage-report
+      - lf-infra-publish

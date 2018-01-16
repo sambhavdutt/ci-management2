@@ -1,0 +1,285 @@
+---
+- project:
+    name: fabric-test-jobs
+    jobs:
+      - 'fabric-test-merge-{arch}'
+      - 'fabric-test-verify-{arch}'
+      - 'fabric-smoke-test-daily-{arch}'
+      - 'fabric-test-daily-{arch}'
+      - 'fabric-daily-stable-images-{arch}'
+
+    project: 'fabric-test'
+    arch:
+      - 'x86_64'
+    mvn-settings: 'fabric-settings'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-test-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: ''
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-test-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+         set -o pipefail
+
+         echo "=========> Install govendor"
+         go get -u github.com/kardianos/govendor
+         echo "=========> Run Smoke Tests..."
+         echo
+         cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test && make ci-smoke
+
+    publishers:
+      - lf-infra-publish
+      - dockerlog
+      - daily-test-results
+
+- job-template:
+    name: 'fabric-smoke-test-daily-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: ''
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-test-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - timed: 'H H * * *'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+         set -o pipefail
+
+         echo "=========> Install govendor"
+         go get -u github.com/kardianos/govendor
+         echo "=========> Run Smoke Tests..."
+         echo
+         cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test && make ci-smoke
+
+    publishers:
+      - lf-infra-publish
+      - dockerlog
+      - daily-test-results
+
+- job-template:
+    name: 'fabric-test-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-test-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+         set -o pipefail
+
+         echo "=========> Install govendor"
+         go get -u github.com/kardianos/govendor
+         echo "=========> Run Smoke Tests..."
+         cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test && make ci-smoke
+
+    publishers:
+      - lf-infra-publish
+      - dockerlog
+      - daily-test-results
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-test-daily-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    scm:
+      - hyperledger-fabric-test-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - timed: 'H 3 * * *'
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+         set -o pipefail
+
+         echo "=========> Install govendor"
+         go get -u github.com/kardianos/govendor
+         echo "=======> Run Daily test suite..."
+         echo
+         cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test && make ci-daily
+      - publish-daily-images-binaries
+
+    publishers:
+      - lf-infra-publish
+      - daily-test-results
+      - test-logs
+
+- job-template:
+    name: 'fabric-daily-stable-images-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    scm:
+      - hyperledger-fabric-test-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+         set -o pipefail
+
+         echo "=========> Install govendor"
+         go get -u github.com/kardianos/govendor
+         echo "=========> Run Smoke Tests..."
+         cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test && make git-update && make fabric && make ca
+         make docker -C $WORKSPACE/gopath/src/github.com/hyperledger/fabric
+         make docker-fabric-ca -C $WORKSPACE/gopath/src/github.com/hyperledger/fabric-ca
+         make dist-all -C $WORKSPACE/gopath/src/github.com/hyperledger/fabric
+      - provide-maven-settings:
+          global-settings-file: 'global-settings'
+          fabric-settings-file: '{mvn-settings}'
+      - docker-login
+      - publish-daily-images
+      - publish-daily-binaries
+
+    publishers:
+      - lf-infra-publish
+      - daily-test-results
+      - test-logs

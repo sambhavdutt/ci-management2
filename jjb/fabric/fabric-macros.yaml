@@ -1,0 +1,561 @@
+---
+- property:
+    name: 'fabric-x86_64'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            GOROOT=/opt/go/go1.9.linux.amd64
+            JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+            PATH=$GOROOT/bin:$GOPATH/bin:~/npm/bin:$PATH:$WORKSPACE/gopath/src/github.com/hyperledger/fabric/build/bin:/home/jenkins/.nvm/versions/node/v6.9.5/bin:/home/jenkins/.nvm/versions/node/v8.9.0/bin
+            ARCH=x86_64
+
+- property:
+    name: 'fabric-go-x86_64'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+            PATH=$GOROOT/bin:$GOPATH/bin:~/npm/bin:$PATH:$WORKSPACE/gopath/src/github.com/hyperledger/fabric/build/bin:/home/jenkins/.nvm/versions/node/v6.9.5/bin:/home/jenkins/.nvm/versions/node/v8.9.0/bin
+            ARCH=x86_64
+
+- property:
+    name: 'fabric-go-s390x'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            PATH=$GOROOT/bin:$GOPATH/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:~/npm/bin:/home/jenkins/.nvm/versions/node/v6.9.5/bin:/home/jenkins/.nvm/versions/node/v8.9.0/bin:$PATH
+            ARCH=s390x
+
+- property:
+    name: 'fabric-s390x'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            GOROOT=/opt/go/go1.9.linux.s390x
+            PATH=$GOROOT/bin:$GOPATH/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:~/npm/bin:/home/jenkins/.nvm/versions/node/v6.9.5/bin:/home/jenkins/.nvm/versions/node/v8.9.0/bin:$PATH
+            ARCH=s390x
+
+- property:
+    name: 'fabric-ppc64le'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            GOROOT=/usr/local/go/go1.9.linux.ppc64le
+            PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+            ARCH=ppc64le
+
+- property:
+    name: 'fabric-go-ppc64le'
+    properties:
+      - inject:
+          properties-content: |
+            GOPATH=$WORKSPACE/gopath
+            PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+            ARCH=ppc64le
+- scm:
+    name: hyperledger-fabric-gerrit
+    scm:
+      - git:
+          credentials-id: 'hyperledger-jobbuilder'
+          url: 'ssh://hyperledger-jobbuilder@gerrit.hyperledger.org:29418/fabric'
+          branches:
+            - 'origin/$GERRIT_BRANCH'
+          wipe-workspace: true
+          basedir: 'gopath/src/github.com/hyperledger/fabric'
+          refspec: '$GERRIT_REFSPEC'
+          choosing-strategy: 'gerrit'
+
+- scm:
+    name: hyperledger-fabric-test-gerrit
+    scm:
+      - git:
+          credentials-id: 'hyperledger-jobbuilder'
+          url: 'ssh://hyperledger-jobbuilder@gerrit.hyperledger.org:29418/fabric-test'
+          branches:
+            - 'origin/$GERRIT_BRANCH'
+          wipe-workspace: true
+          basedir: 'gopath/src/github.com/hyperledger/fabric-test'
+          refspec: '$GERRIT_REFSPEC'
+          choosing-strategy: 'gerrit'
+- scm:
+    name: hyperledger-fabric-busybox-gerrit
+    scm:
+      - git:
+          credentials-id: 'hyperledger-jobbuilder'
+          url: 'ssh://hyperledger-jobbuilder@gerrit.hyperledger.org:29418/fabric-busybox'
+          branches:
+            - 'origin/$GERRIT_BRANCH'
+          wipe-workspace: true
+          refspec: '$GERRIT_REFSPEC'
+
+- builder:
+    name: golang-environment-x86_64
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric/ci.properties
+          properties-content: |
+            GOROOT=/opt/go/go$GO_VER.linux.amd64
+            PATH=$GOROOT/bin:$PATH
+
+- builder:
+    name: golang-environment-s390x
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric/ci.properties
+          properties-content: |
+            GOROOT=/opt/go/go$GO_VER.linux.s390x
+            PATH=$GOROOT/bin:$PATH
+
+- builder:
+    name: golang-environment-ppc64le
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric/ci.properties
+          properties-content: |
+            GOROOT=/usr/local/go/go$GO_VER.linux.ppc64le
+            PATH=$GOROOT/bin:$PATH
+
+- builder:
+    name: output-environment
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+
+          # Output all information about the environment
+          uname -a
+          cat /etc/*-release
+          env
+          go version
+          gcc --version
+          docker version
+          docker info
+          docker-compose version
+          pgrep -a docker
+          docker images
+          docker ps -a
+
+- builder:
+    name: buildimages
+    builders:
+      - shell:
+          !include-raw: include-raw-buildimages.sh
+
+- builder:
+    name: build-docker-images
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-build-docker-images.sh
+
+- builder:
+    name: pull-repos
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-clone-repos.sh
+- builder:
+    name: release-docker-images
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-release-docker-images.sh
+
+- builder:
+    name: nexus-docker-images
+    builders:
+      - shell:
+          !include-raw: include-raw-nexus-docker-images.sh
+
+- builder:
+    name: clean-environment
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-clean-environment.sh
+
+- builder:
+    name: busybox-clean-environment
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-busybox-clean-environment.sh
+
+- builder:
+    name: fabric-x86_64-docker-deploy
+    builders:
+      - shell:
+          !include-raw: include-raw-x86_64-docker-image-deploy.sh
+
+- builder:
+    name: fabric-s390x-docker-deploy
+    builders:
+      - shell:
+          !include-raw: include-raw-s390x-docker-image-deploy.sh
+
+- builder:
+    name: fabric-ppc64le-docker-deploy
+    builders:
+      - shell:
+          !include-raw: include-raw-ppc64le-docker-image-deploy.sh
+
+- builder:
+    name: fabric-behave-tests
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-behave.sh
+
+- builder:
+    name: dockerimages
+    builders:
+      - shell:
+          !include-raw: include-raw-FIT-dockerimages.sh
+
+- builder:
+    name: end-to-end-CLI
+    builders:
+      - shell:
+          !include-raw: include-raw-FIT-CLI-e2e.sh
+
+- builder:
+    name: end-to-end-NODE
+    builders:
+      - shell:
+          !include-raw: include-raw-FIT-NODE-e2e.sh
+
+- builder:
+    name: end-to-end-JAVA
+    builders:
+      - shell:
+          !include-raw: include-raw-FIT-JAVA-e2e.sh
+
+- builder:
+    name: nexus-docker-push
+    builders:
+      - shell:
+          !include-raw: include-raw-nexus-docker-push.sh
+
+- builder:
+    name: fabric-nexus-docker-release
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-nexus-docker-release.sh
+- builder:
+    name: fabric-unit-tests
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+          cd gopath/src/github.com/hyperledger/fabric && time make linter && time make unit-test
+
+- builder:
+    name: daily-tests
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+
+          cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric/test/regression/daily
+          #Comment out behave tests from DailyTestSuite.sh
+          sed -i '16,19 s/^/#/' runDailyTestSuite.sh
+          ./runDailyTestSuite.sh
+
+          # Copy .csv files to $WORKSPACE directory
+          cp -r /tmp/experiments .
+          # Test Chaincode ex02
+          # Disable example02 chaincode tests
+          # cd ${WORKSPACE}/gopath/src/github.com/hyperledger/fabric/test/regression/daily/chaincodeTests && ./runChaincodes.sh
+
+- builder:
+    name: fabric-tests
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+
+          cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric-test/regression/daily
+          #Comment out behave tests from DailyTestSuite.sh
+          sed -i '16,19 s/^/#/' runDailyTestSuite.sh
+          ./runDailyTestSuite.sh
+
+          # Copy .csv files to $WORKSPACE directory
+          cp -r /tmp/experiments .
+
+- builder:
+    name: release-tests
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+
+          cd $WORKSPACE/gopath/src/github.com/hyperledger/fabric/test/regression/release
+          chmod +x runReleaseTestSuite.sh
+          sed -i s/1.0.1/1.1.0-preview/g run_byfn_cli_release_tests.sh
+          sed -i '16,16 s/^/#/' run_e2e_java_sdk.sh
+          sed -i '17,17 s/^/#/' run_node_sdk_byfn.sh
+          #Comment out behave tests from DailyTestSuite.sh
+          sed -i '51,52 s/^/#/' runReleaseTestSuite.sh
+          ./runReleaseTestSuite.sh
+
+- builder:
+    name: daily-behave-tests
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-behave-tests.sh
+
+- builder:
+    name: release-behave-tests
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-release-behave-tests.sh
+- builder:
+    name: push-fabric-binaries
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-push-fabric-binaries.sh
+
+- builder:
+    name: push-fabric-byfn
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-push-fabric-byfn.sh
+
+- builder:
+    name: fabric-smoke-tests
+    builders:
+      - shell:
+          !include-raw: include-raw-fabric-smoke-tests.sh
+
+- builder:
+    name: fabric-busybox-test
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+          time make test
+
+- builder:
+    name: fabric-busybox-release
+    builders:
+      - shell: |
+          #!/bin/bash -exu
+          set -o pipefail
+          time make install
+
+- builder:
+    name: fabric-clone
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+
+          FABRIC_REPO_NAME=fabric
+          WD="${WORKSPACE}/gopath/src/github.com/hyperledger/${FABRIC_REPO_NAME}"
+          rm -rf $WD
+          git clone https://gerrit.hyperledger.org/r/$FABRIC_REPO_NAME $WD
+          cd $WD && CA_COMMIT=$(git log -1 --pretty=format:"%h")
+          git checkout $GERRIT_BRANCH
+          echo "CA_COMMIT =========> $CA_COMMIT"
+
+- publisher:
+    name: archive-behave-logs
+    publishers:
+      - archive:
+          artifacts: 'gopath/src/github.com/hyperledger/fabric/bddtests/*.log'
+          fingerprint: true
+          default-excludes: false
+          allow-empty: true
+
+- publisher:
+    name: dockerlog
+    publishers:
+      - archive:
+          artifacts: '**/*.log'
+          fingerprint: true
+          default-excludes: false
+          allow-empty: true
+
+- publisher:
+    name: code-coverage-report
+    publishers:
+      - cobertura:
+          report-file: "**/report.xml"
+          targets:
+            - files:
+                healthy: 80
+                unhealthy: 50
+                failing: 0
+            - method:
+                healthy: 80
+                unhealthy: 50
+                failing: 0
+            - line:
+                healthy: 80
+                unhealthy: 50
+                failing: 0
+            - packages:
+                healthy: 80
+                unhealthy: 50
+                failing: 0
+            - classes:
+                healthy: 80
+                unhealthy: 50
+                failing: 0
+
+- publisher:
+    name: jacoco-coverage-report
+    publishers:
+      - jacoco:
+          exec-pattern: '**/merged.exec'
+          class-pattern: '**/classes'
+          source-pattern: '**/src/main/java'
+          inclusion-pattern: '**/*.class'
+          exclusion-pattern: '**/org/hyperledger/fabric/protos/**'
+          targets:
+            - instruction:
+                healthy: 7
+                unhealthy: 1
+            - branch:
+                healthy: 8
+                unhealthy: 2
+            - complexity:
+                healthy: 9
+                unhealthy: 3
+            - line:
+                healthy: 10
+                unhealthy: 4
+            - method:
+                healthy: 11
+                unhealthy: 5
+            - class:
+                healthy: 12
+                unhealthy: 6
+
+- publisher:
+    name: chaincode-java-jacoco-coverage-report
+    publishers:
+      - jacoco:
+          exec-pattern: '**/**.exec'
+          class-pattern: '**/classes'
+          source-pattern: '**/src/main/java'
+          inclusion-pattern: '**/*.class'
+          targets:
+            - instruction:
+                healthy: 7
+                unhealthy: 1
+            - branch:
+                healthy: 8
+                unhealthy: 2
+            - complexity:
+                healthy: 9
+                unhealthy: 3
+            - line:
+                healthy: 10
+                unhealthy: 4
+            - method:
+                healthy: 11
+                unhealthy: 5
+            - class:
+                healthy: 12
+                unhealthy: 6
+
+- publisher:
+    name: ca-code-coverage-report
+    publishers:
+      - cobertura:
+          report-file: "**/coverage.xml"
+          targets:
+            - files:
+                healthy: 80
+                unhealthy: 75
+                failing: 0
+            - method:
+                healthy: 80
+                unhealthy: 75
+                failing: 0
+            - line:
+                healthy: 80
+                unhealthy: 75
+                failing: 0
+            - packages:
+                healthy: 80
+                unhealthy: 75
+                failing: 0
+            - classes:
+                healthy: 80
+                unhealthy: 75
+                failing: 0
+
+- publisher:
+    name: java-chaincode-coverage-report
+    publishers:
+      - html-publisher:
+          name: "Test Summary"
+          dir: "$WORKSPACE/shim/build/reports/tests/test"
+          files: "index.html"
+          keep-all: true
+          link-to-last-build: true
+
+- publisher:
+    name: behave-test-results
+    publishers:
+      - junit:
+          results: 'gopath/src/github.com/hyperledger/fabric/bddtests/reports/*.xml'
+
+- publisher:
+    name: daily-test-results
+    publishers:
+      - junit:
+          results: '**/*.xml'
+
+- publisher:
+    name: test-logs
+    publishers:
+      - archive:
+          artifacts: '**/*.csv, **/*.log'
+          fingerprint: true
+          default-excludes: false
+          allow-empty: true
+
+- builder:
+    name: fabric-goast-scan
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+          cd gopath/src/github.com/hyperledger/fabric
+
+          go get github.com/GoASTScanner/gas && gas -fmt=json -out=results.json ./...
+
+- publisher:
+    name: daily-goast-scan-results
+    publishers:
+      - archive:
+          artifacts: 'gopath/src/github.com/hyperledger/fabric/*.json'
+          fingerprint: true
+          default-excludes: false
+          allow-empty: true
+
+- builder:
+    name: npm-install
+    builders:
+      - shell: |
+          #!/bin/bash -e
+          set -o pipefail
+
+          # Install nvm to install multi node versions
+          wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+          # shellcheck source=/dev/null
+          export NVM_DIR="$HOME/.nvm"
+          # shellcheck source=/dev/null
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
+          # Install nodejs version 8.9.0
+          nvm install 8.9.0 || true
+
+          # use nodejs 8.9.0 version
+          nvm use --delete-prefix v8.9.0 --silent
+
+          echo "npm version ======>"
+          npm -v
+          echo "node version =======>"
+          node -v

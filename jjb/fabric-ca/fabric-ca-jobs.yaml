@@ -1,0 +1,275 @@
+---
+- project:
+    name: fabric-ca
+    jobs:
+      - 'fabric-ca-merge-{arch}'
+      - 'fabric-ca-verify-{arch}'
+      - 'fabric-ca-merge-ppc64le'
+      - 'fabric-ca-verify-ppc64le'
+      - 'fabric-ca-merge-s390x'
+      - 'fabric-ca-verify-s390x'
+
+    project: 'fabric-ca'
+    arch:
+      - 'x86_64'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-ca-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-ca-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - 'ca-golang-environment-{arch}'
+      - output-environment
+      - ca-unit-tests
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report
+
+- job-template:
+    name: 'fabric-ca-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - ca-clone
+      - 'ca-golang-environment-{arch}'
+      - output-environment
+      - ca-unit-tests
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report
+
+
+- job-template:
+    name: 'fabric-ca-verify-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-ca-gerrit
+
+    triggers:
+      - gerrit-trigger-ca-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - 'ca-golang-environment-s390x'
+      - output-environment
+      - ca-unit-tests-s390x
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report
+
+- job-template:
+    name: 'fabric-ca-merge-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+
+    triggers:
+      - gerrit-trigger-ca-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - ca-clone
+      - 'ca-golang-environment-s390x'
+      - output-environment
+      - ca-unit-tests-s390x
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report
+
+
+- job-template:
+    name: 'fabric-ca-verify-ppc64le'
+
+    project-type: freestyle
+    node: 'hyp-p'
+    concurrent: true
+
+    disabled: true
+
+    properties:
+      - 'fabric-ppc64le'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-ca-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-submitted-silent:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - ca-tests
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report
+
+- job-template:
+    name: 'fabric-ca-merge-ppc64le'
+
+    project-type: freestyle
+    node: 'hyp-p'
+    concurrent: true
+
+    properties:
+      - 'fabric-ppc64le'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+
+    triggers:
+      - gerrit-trigger-patch-merged-silent:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - ca-clone
+      - output-environment
+      - ca-tests
+
+    publishers:
+      - lf-infra-publish
+      - ca-code-coverage-report

@@ -1,0 +1,468 @@
+---
+- project:
+    name: fabric-app-images
+    jobs:
+      - 'fabric-app-image-verify-docker-{arch}'
+      - 'fabric-app-image-verify-docker-ppc64le'
+      - 'fabric-app-image-verify-docker-s390x'
+      - 'fabric-app-image-merge-docker-ppc64le'
+      - 'fabric-app-image-merge-docker-s390x'
+      - 'fabric-app-image-merge-docker-{arch}'
+      - 'fabric-app-image-release-docker-{arch}'
+      - 'fabric-app-image-release-docker-ppc64le'
+      - 'fabric-app-image-release-docker-s390x'
+      - 'fabric-app-image-release-trigger'
+
+    project: 'fabric'
+    arch:
+      - 'x86_64'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-app-image-release-trigger'
+
+    project-type: freestyle
+    node: 'hyp-x'
+    concurrent: true
+
+    properties:
+      - 'fabric-x86_64'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: false
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '10'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - app-image-release
+
+    publishers:
+      - lf-infra-publish
+      - image-downstream-jobs
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-app-image-verify-docker-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-verify-docker-ppc64le'
+
+    project-type: freestyle
+    node: 'hyp-p'
+    concurrent: true
+
+    properties:
+      - 'fabric-ppc64le'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-verify-docker-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+- job-template:
+    name: 'fabric-app-image-merge-docker-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-merge-docker-ppc64le'
+
+    project-type: freestyle
+    node: 'hyp-p'
+    concurrent: true
+
+    properties:
+      - 'fabric-ppc64le'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-merge-docker-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: 'master'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - buildimages
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-release-docker-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: false
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: '+refs/tags/*:refs/remotes/origin/tags/*'
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-tag:
+          name: '{project}'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - 'golang-environment-{arch}'
+      - output-environment
+      - buildimages
+      - app-docker-image-release
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-release-docker-ppc64le'
+
+    project-type: freestyle
+    node: 'hyp-p'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-ppc64le'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: false
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: '+refs/tags/*:refs/remotes/origin/tags/*'
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-tag:
+          name: '{project}'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - 'golang-environment-ppc64le'
+      - output-environment
+      - buildimages
+      - app-docker-image-release
+
+    publishers:
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-app-image-release-docker-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-go-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: false
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: '+refs/tags/*:refs/remotes/origin/tags/*'
+
+    scm:
+      - hyperledger-fabric-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-tag:
+          name: '{project}'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '120'
+
+    builders:
+      - clean-environment
+      - 'golang-environment-s390x'
+      - output-environment
+      - buildimages
+      - app-docker-image-release
+
+    publishers:
+      - lf-infra-publish

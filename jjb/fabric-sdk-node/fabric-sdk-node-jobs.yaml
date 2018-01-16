@@ -1,0 +1,476 @@
+---
+- project:
+    name: fabric-sdk-node-job
+    jobs:
+      - 'fabric-sdk-node8-verify-{arch}'
+      - 'fabric-sdk-node8-merge-{arch}'
+      - 'fabric-sdk-node6-verify-{arch}'
+      - 'fabric-sdk-node6-merge-{arch}'
+      - 'fabric-sdk-node8-verify-s390x'
+      - 'fabric-sdk-node8-merge-s390x'
+      - 'fabric-sdk-node6-verify-s390x'
+      - 'fabric-sdk-node6-merge-s390x'
+      - 'fabric-sdk-node-vulnerable-tests-{arch}'
+      - 'FIT-node-{arch}'
+    project: 'fabric-sdk-node'
+    arch:
+      - 'x86_64'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node8-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node8-patch-submitted-{arch}:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node8-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+- job-template:
+    name: 'fabric-sdk-node6-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'release'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node6-patch-submitted-{arch}:
+          name: '{project}'
+          branch: 'release'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node6-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node8-verify-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node8-patch-submitted-s390x:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node8-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node6-verify-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'release'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node6-patch-submitted-s390x:
+          name: '{project}'
+          branch: 'release'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node6-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+- job-template:
+    name: 'fabric-sdk-node8-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node8-tests
+      - npm-publish
+      - gulp-doc
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+- job-template:
+    name: 'fabric-sdk-node6-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'release'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node-patch-merged:
+          name: '{project}'
+          branch: 'release'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node6-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node8-merge-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node8-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node6-merge-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'release'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node-patch-merged:
+          name: '{project}'
+          branch: 'release'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - sdk-node6-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+      - sdk-node-coverage-report
+
+- job-template:
+    name: 'FIT-node-{arch}'
+    description: |
+       This Job covers Functional integration Testing on fabric-sdk node
+       repository and it runs for every 6 hrs on latest commits of fabric,
+       fabric/ca and fabric/sdk-node repos. This Job is Managed by Jenkins
+       Job Builder. Do not edit via web.
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    triggers:
+      - timed: 'H */6 * * *'
+
+    wrappers:
+
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - pull-images
+      - chaincode-node-docker-images
+      - end-to-end-tests
+
+    publishers:
+      - lf-infra-publish
+      - sdk-logs
+      - sdk-node-coverage-report
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-node-vulnerable-tests-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-node
+
+    triggers:
+      - gerrit-trigger-node8-patch-submitted-vul-{arch}:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '60'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - fabric-sdk-node-vulnerable-tests
+
+    publishers:
+      - lf-infra-publish

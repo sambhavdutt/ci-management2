@@ -1,0 +1,110 @@
+---
+- project:
+    name: fabric-chaincode-java
+    jobs:
+      - 'fabric-chaincode-java-verify-{arch}'
+      - 'fabric-chaincode-java-merge-{arch}'
+
+    project: 'fabric-chaincode-java'
+    arch:
+      - 'x86_64'
+
+    mvn-settings: 'fabric-settings'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-chaincode-java-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-java
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '20'
+
+    builders:
+      - verify-commit-message
+      - output-environment
+      - shell: |
+         #!/bin/bash -exu
+
+         set -o pipefail
+         # gradlew build from fabric-chaincode-java repo
+         ./gradlew build
+
+    publishers:
+      - chaincode-java-jacoco-coverage-report
+      - java-chaincode-coverage-report
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-chaincode-java-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-chaincode-java
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '20'
+
+    builders:
+      - verify-commit-message
+      - output-environment
+      - provide-maven-gradle-settings:
+          global-settings-file: 'global-settings'
+          fabric-settings-file: '{mvn-settings}'
+      - shell: !include-raw-escape: include-raw-publish-nexus-gradle.sh
+
+    publishers:
+      - chaincode-java-jacoco-coverage-report
+      - java-chaincode-coverage-report
+      - lf-infra-publish

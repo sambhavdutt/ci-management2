@@ -1,0 +1,90 @@
+---
+- scm:
+    name: hyperledger-fabric-ca-gerrit
+    scm:
+      - git:
+          credentials-id: 'hyperledger-jobbuilder'
+          url: 'ssh://hyperledger-jobbuilder@gerrit.hyperledger.org:29418/fabric-ca'
+          branches:
+            - 'origin/$GERRIT_BRANCH'
+          wipe-workspace: true
+          basedir: 'gopath/src/github.com/hyperledger/fabric-ca'
+          refspec: '$GERRIT_REFSPEC'
+          choosing-strategy: 'gerrit'
+
+- builder:
+    name: ca-unit-tests
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+
+          cd gopath/src/github.com/hyperledger/fabric-ca && make
+          make docker-fvt && docker run -v $PWD:/opt/gopath/src/github.com/hyperledger/fabric-ca hyperledger/fabric-ca-fvt
+
+- builder:
+    name: ca-clone
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+
+          CA_REPO_NAME=fabric-ca
+          WD="${WORKSPACE}/gopath/src/github.com/hyperledger/${CA_REPO_NAME}"
+          rm -rf $WD
+          git clone ssh://hyperledger-jobbuilder@gerrit.hyperledger.org:29418/$CA_REPO_NAME $WD
+          cd $WD && CA_COMMIT=$(git log -1 --pretty=format:"%h")
+          echo "CA_COMMIT =========> $CA_COMMIT"
+          echo
+
+- builder:
+    name: ca-tests
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+
+          cd gopath/src/github.com/hyperledger/fabric-ca && make
+
+- builder:
+    name: ca-unit-tests-s390x
+    builders:
+      - shell: |
+          #!/bin/bash -eu
+          set -o pipefail
+
+          # yamllint disable-line rule:line-length
+          rm -rf gopath/src/github.com/hyperledger/fabric-ca/vendor/github.com/cloudflare/cfssl/vendor/github.com/cloudflare/cfssl_trust/ca-bundle
+          # yamllint disable-line rule:line-length
+          rm -rf gopath/src/github.com/hyperledger/fabric-ca/vendor/github.com/cloudflare/cfssl/vendor/github.com/cloudflare/cfssl_trust/intermediate_ca
+
+          cd gopath/src/github.com/hyperledger/fabric-ca && TMPDIR=/data/tmp make
+          make docker-fvt && docker run -v $PWD:/opt/gopath/src/github.com/hyperledger/fabric-ca hyperledger/fabric-ca-fvt
+
+- builder:
+    name: ca-golang-environment-x86_64
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric-ca/ci.properties
+          properties-content: |
+            GOROOT=/opt/go/go$GO_VER.linux.amd64
+            PATH=$GOROOT/bin:$PATH
+
+- builder:
+    name: ca-golang-environment-ppc64le
+
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric-ca/ci.properties
+          properties-content: |
+            GOROOT=/usr/local/go/go$GO_VER.linux.ppc64le
+            PATH=$GOROOT/bin:$PATH
+
+- builder:
+    name: ca-golang-environment-s390x
+    builders:
+      - inject:
+          properties-file: $WORKSPACE/gopath/src/github.com/hyperledger/fabric-ca/ci.properties
+          properties-content: |
+            GOROOT=/opt/go/go$GO_VER.linux.s390x
+            PATH=$GOROOT/bin:$PATH

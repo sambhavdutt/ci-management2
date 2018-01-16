@@ -1,0 +1,197 @@
+---
+- project:
+    name: fabric-sdk-go
+    jobs:
+      - 'fabric-sdk-go-tests-merge-{arch}'
+      - 'fabric-sdk-go-tests-verify-{arch}'
+      - 'fabric-sdk-go-tests-verify-s390x'
+      - 'fabric-sdk-go-tests-merge-s390x'
+
+    project: 'fabric-sdk-go'
+    arch:
+      - 'x86_64'
+    mvn-settings: 'fabric-settings'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-go-tests-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: ''
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-go:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '50'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - fabric-sdk-go-unit-tests
+      - fabric-sdk-go-integration-tests
+
+    publishers:
+      - lf-infra-publish
+      - code-coverage-report
+
+- job-template:
+    name: 'fabric-sdk-go-tests-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-go:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '50'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - fabric-sdk-go-unit-tests
+      - fabric-sdk-go-integration-tests
+
+    publishers:
+      - lf-infra-publish
+      - code-coverage-report
+
+- job-template:
+    name: 'fabric-sdk-go-tests-verify-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: ''
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-go:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '50'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - fabric-sdk-go-unit-tests
+      - fabric-sdk-go-integration-tests
+
+    publishers:
+      - code-coverage-report
+      - lf-infra-publish
+
+- job-template:
+    name: 'fabric-sdk-go-tests-merge-s390x'
+
+    project-type: freestyle
+    node: 'hyp-z'
+    concurrent: true
+
+    properties:
+      - 'fabric-s390x'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-go:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '50'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - fabric-sdk-go-unit-tests
+      - fabric-sdk-go-integration-tests
+
+    publishers:
+      - code-coverage-report
+      - lf-infra-publish

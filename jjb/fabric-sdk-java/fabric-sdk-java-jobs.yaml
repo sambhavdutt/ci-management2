@@ -1,0 +1,369 @@
+---
+- project:
+    name: fabric-sdk-java-jobs
+    jobs:
+      - gerrit-maven-clm:
+          java-version: ''
+          build-node: hyp-x
+      - 'fabric-sdk-java-verify-{arch}'
+      - 'fabric-sdk-java-verify-1.0.0-{arch}'
+      - 'fabric-sdk-java-merge-1.0.0-{arch}'
+      - 'fabric-sdk-java-verify-jsdk1.0.0-fabric_latest-{arch}'
+      - 'fabric-sdk-java-merge-jsdk1.0.0-fabric_latest-{arch}'
+      - 'fabric-sdk-java-merge-{arch}'
+      - 'fabric-sdk-java-release-{arch}'
+
+    mvn-settings: 'fabric-settings'
+    project-name: 'fabric-sdk-java'
+    project: 'fabric-sdk-java'
+    arch:
+      - 'x86_64'
+
+# Verify job
+- job-template:
+    name: 'fabric-sdk-java-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - fabric-sdk-java-end-to-end-test
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs
+
+# Merge job
+- job-template:
+    name: 'fabric-sdk-java-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - fabric-sdk-java-end-to-end-test
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs
+
+# release job
+- job-template:
+    name: 'fabric-sdk-java-release-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - fabric-sdk-java-end-to-end-test
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+      - hyperledger-fabric-ship-java-jar:
+          maven-version: 'mvn33'
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - sdk-logs
+
+# Verify 1.0.0 job
+- job-template:
+    name: 'fabric-sdk-java-verify-1.0.0-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - fabric-sdk-java-1.0.0-test
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs
+
+# Merge 1.0.0 job
+- job-template:
+    name: 'fabric-sdk-java-merge-1.0.0-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - clean-environment
+      - fabric-sdk-java-1.0.0-test
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs
+
+
+# Verify job
+- job-template:
+    name: 'fabric-sdk-java-verify-jsdk1.0.0-fabric_latest-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - fabric-jsdk1.0.0-fabric_latest
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs
+
+# Verify job
+- job-template:
+    name: 'fabric-sdk-java-merge-jsdk1.0.0-fabric_latest-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-sdk-java-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    disabled: true
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-java-gerrit
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '40'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - fabric-jsdk1.0.0-fabric_latest
+      - shell: |
+          echo "----> ", $(pwd)
+          echo "----> ", "$(ls -al)"
+          echo "----> ", $WORKSPACE
+          echo "----> ", $(find . -name "*.xml")
+
+    publishers:
+      - jacoco-coverage-report
+      - lf-infra-publish
+      - java-sdk-logs

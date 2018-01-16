@@ -1,0 +1,150 @@
+---
+- project:
+    name: fabric-samples-jobs
+    jobs:
+      - 'fabric-byfn-merge-{arch}'
+      - 'fabric-byfn-verify-{arch}'
+      - 'fabric-verify-byfn-checks-{arch}'
+
+    project: 'fabric-samples'
+    arch:
+      - 'x86_64'
+    mvn-settings: 'fabric-settings'
+
+- job-template:
+    name: 'fabric-byfn-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-samples-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-submitted:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '240'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - pull-images
+      - build-docker-images
+      - fabric-byfn-tests
+
+    publishers:
+      - lf-infra-publish
+      - dockerlog
+
+- job-template:
+    name: 'fabric-byfn-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-samples-gerrit:
+          credentials-id: 'hyperledger-jobbuilder'
+
+    triggers:
+      - gerrit-trigger-patch-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '240'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - output-environment
+      - build-docker-images
+      - fabric-byfn-tests
+
+    publishers:
+      - lf-infra-publish
+      - dockerlog
+
+- job-template:
+    name: 'fabric-verify-byfn-checks-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    triggers:
+      - gerrit-comment-trigger:
+          name: '{project}'
+          branch: ''
+          trigger-comment1: 'Build finish successful - SMOKE'
+          trigger-comment2: 'rebuild-byfn'
+          fabric-build-check: 'Build finish successful - functional'
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '240'
+
+    builders:
+      - clean-environment
+      - pull-images
+      - provide-maven-settings:
+          global-settings-file: 'global-settings'
+          fabric-settings-file: '{mvn-settings}'
+      - docker-login
+      - fabric-byfn-smoke-tests
+
+    publishers:
+      - lf-infra-publish

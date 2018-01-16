@@ -1,0 +1,100 @@
+---
+- project:
+    name: fabric-sdk-rest-job
+    jobs:
+      - 'fabric-sdk-rest-verify-{arch}'
+      - 'fabric-sdk-rest-merge-{arch}'
+    project: 'fabric-sdk-rest'
+    arch:
+      - 'x86_64'
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-rest-verify-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+
+    scm:
+      - hyperledger-fabric-sdk-rest
+
+    triggers:
+      - gerrit-trigger-release-verify:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '20'
+
+    builders:
+      - verify-commit-message
+      - clean-environment
+      - output-environment
+      - sdk-rest-tests
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
+
+# gerrit changes
+
+- job-template:
+    name: 'fabric-sdk-rest-merge-{arch}'
+
+    project-type: freestyle
+    node: 'hyp-{arch}'
+    concurrent: true
+
+    properties:
+      - 'fabric-{arch}'
+      - build-discarder:
+          days-to-keep: 7
+          artifact-days-to-keep: 7
+
+    parameters:
+      - project-parameter:
+          project: '{project}'
+      - gerrit-parameter:
+          branch: 'master'
+      - gerrit-refspec-parameter:
+          refspec: ''
+    scm:
+      - hyperledger-fabric-sdk-rest
+
+    triggers:
+      - gerrit-trigger-release-merged:
+          name: '{project}'
+          branch: ''
+
+    wrappers:
+      - hyperledger-infra-wrappers
+      - build-timeout:
+          timeout: '20'
+
+    builders:
+      - clean-environment
+      - output-environment
+      - sdk-rest-tests
+      - rest-npm-publish
+
+    publishers:
+      - sdk-logs
+      - lf-infra-publish
